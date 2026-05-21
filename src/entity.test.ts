@@ -7,6 +7,8 @@ describe("Entity.reactionParser", () => {
         vi.clearAllMocks();
     });
 
+    // TODO: Allow arbitrary values. Only check structure.
+
     test("forwards the narrated event and returns the parsed result from minimalLLMCall", async () => {
         const mockResult = [
             {

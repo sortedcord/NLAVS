@@ -34,20 +34,18 @@ export class Entity extends BaseAgent {
         return this.generateIntent(prompt);
     }
 
-    static reactionParser(narrated_event: string): any {
+    static async reactionParser(narrated_event: string): Promise<any> {
         // schema is a list of event objects in chronological order.
         const schema = z.array(z.object({
             source: z.string().describe("Who or what caused the event"),
-            type: z.string().describe("Type of the event, e.g. dialogue, action, internal thought, etc."),
+            type: z.enum(['dialogue', 'action', 'thought']),
             content: z.string().describe("Text content of the event"),
             attributes: z.array(z.string()).describe("List of attributes describing the event, e.g. 'Jack says this while still watching tv', 'Jack seems annoyed', etc."),
         }));
 
-        const jsonSchema = zodToJsonSchema(schema);
-
         const instruction = `Parse the following narrated event into a structured format according to the provided schema.`;
 
-        return minimalLLMCall(instruction, narrated_event, jsonSchema);
+        return await minimalLLMCall(instruction, narrated_event, schema);
     }
 
     recordEvent(event: string, affect_vector: AffectVector) {

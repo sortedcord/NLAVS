@@ -56,8 +56,9 @@ let event = {
     ]
 }
 
-// alice.reactToEvent(JSON.stringify(event), current_context).then((response) => {
-//     console.log("Alice's reaction to the event:", response);
-// }).catch((error) => {
-//     console.error("Error generating Alice's reaction:", error);
-// });
+alice.reactToEvent(JSON.stringify(event), current_context).then((response) => {
+    console.log("Alice's reaction to the event:", response);
+}).catch((error) => {
+    console.error("Error generating Alice's reaction:", error);
+});
+

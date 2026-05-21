@@ -1,21 +1,24 @@
-import { GoogleGenAI } from "@google/genai";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import zodToJsonSchema from "zod-to-json-schema";
+import { createAgent, providerStrategy } from "langchain";
+import { Result } from "postcss";
+import { ZodAny } from "zod";
 
-const ai = new GoogleGenAI({});
 
-export async function minimalLLMCall(instruction: string, prompt: string, schema: any = {}): Promise<string> {
-    return await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-            systemInstruction: instruction,
-            responseFormat: {
-                text: {
-                    mimeType: "application/json",
-                    schema: schema,
-                }
-            }
-        }
-    }).then(response => response.text);
+const llm = new ChatGoogleGenerativeAI({
+    model: "gemini-2.5-flash",
+});
+
+export async function minimalLLMCall(instruction: string, prompt: string, zodschema: ZodAny): Promise<any> {
+
+    const structuredLlm = llm.withStructuredOutput(zodschema);
+    const messages = [
+        { role: 'system', content: instruction },
+        { role: 'user', content: prompt },
+    ];
+
+    const response = await structuredLlm.invoke(messages);
+    return response;
 }
 
 interface IAgent {
@@ -30,13 +33,13 @@ export abstract class BaseAgent implements IAgent {
         possible. Your responses are real, not perfect. Do not be overly dramatic 
         unless that is the goal. Always respond in first person.`
 
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                systemInstruction: systemInstructionPrompt
-            }
-        });
-        return response.text;
+        const messages = [
+            { role: 'system', content: systemInstructionPrompt },
+            { role: 'user', content: prompt },
+        ];
+
+        const res = await (llm as any).generate(messages);
+        const text = (res?.generations?.[0]?.[0]?.text) || (res?.generations?.[0]?.text) || res?.text;
+        return text ?? "";
     }
 }
