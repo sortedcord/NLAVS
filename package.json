@@ -1,0 +1,16 @@
+{
+  "name": "nlavs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx tsx --env-file=.env src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@google/genai": "^2.4.0",
+    "tsx": "^4.22.1"
+  }
+}
