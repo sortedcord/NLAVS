@@ -1,8 +1,6 @@
 import { Entity } from "./entity";
-import { GoogleGenAI } from "@google/genai";
 import * as readline from "readline";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // create an entity
 export const alice = new Entity(
@@ -44,98 +42,22 @@ let current_context = {
     location: "home",
     time: "evening",
     social: "with Jack, my husband. He's on the couch watching TV while I'm reading a book.",
+    mood: "completely drained and unmotivated. I want to go to bed but it's too early.",
     activity: "relaxing",
 };
 
-// In-memory conversation history. Each entry: { speaker: 'Jack'|'Alice', text: string }
-const conversationHistory: Array<{ speaker: string; text: string }> = [];
-
-// Helper: build the system instruction sent to the model
-function buildSystemInstruction(): string {
-    const ledgers = alice.ledger
-        .slice(-10)
-        .map((entry) => `- ${entry.event} (affect vector: ${JSON.stringify(entry.affect_vector)})`)
-        .join("\n");
-
-    const convoText = conversationHistory
-        .slice(-12)
-        .map((c) => `${c.speaker}: ${c.text}`)
-        .join("\n");
-
-    return (
-        alice.description +
-        "\n\n" +
-        "Here are some of the recent events in my life and how they made me feel:\n" +
-        ledgers +
-        "\n\n" +
-        "Current context: " +
-        JSON.stringify(current_context) +
-        "\n\n" +
-        "Conversation so far:\n" +
-        convoText +
-        "\n\n" +
-        "Given all this information, please respond as Alice in a way that is consistent with her character and current emotional state. Keep the reply brief and in first person."
-    );
+let event = {
+    "source": "Jack",
+    "type": "dialogue",
+    "content": "Don't tell me you forgot to buy groceries today.",
+    "attributes": [
+        "jack says this while still watching tv",
+        "jack seems annoyed",
+    ]
 }
 
-async function askAlice(jackLine: string) {
-    // append Jack's utterance
-    conversationHistory.push({ speaker: "Jack", text: jackLine });
-
-    const systemInstruction = buildSystemInstruction();
-
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: `Jack says to me: "${jackLine}"`,
-            config: {
-                systemInstruction,
-            },
-        });
-
-        const aliceReply = response.text?.trim() ?? "(no response)";
-        conversationHistory.push({ speaker: "Alice", text: aliceReply });
-        console.log(`Alice: ${aliceReply}`);
-    } catch (err: any) {
-        console.error("Error calling AI:", err?.message ?? err);
-        console.log("Alice: (failed to generate reply)");
-    }
-}
-
-async function main() {
-    console.log("Interactive dialogue. Type as Jack. Commands: /exit to quit, /history to show conversation history.");
-
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        prompt: "Jack: ",
-    });
-
-    rl.prompt();
-
-    rl.on("line", async (line) => {
-        const trimmed = line.trim();
-        if (trimmed === "/exit") {
-            rl.close();
-            return;
-        }
-        if (trimmed === "/history") {
-            console.log("--- Conversation history ---");
-            conversationHistory.forEach((c) => console.log(`${c.speaker}: ${c.text}`));
-            console.log("---------------------------");
-            rl.prompt();
-            return;
-        }
-
-        // Send to AI and wait for reply before prompting again
-        await askAlice(trimmed);
-        rl.prompt();
-    });
-
-    rl.on("close", () => {
-        console.log("Goodbye.");
-        process.exit(0);
-    });
-}
-
-main();
+// alice.reactToEvent(JSON.stringify(event), current_context).then((response) => {
+//     console.log("Alice's reaction to the event:", response);
+// }).catch((error) => {
+//     console.error("Error generating Alice's reaction:", error);
+// });
