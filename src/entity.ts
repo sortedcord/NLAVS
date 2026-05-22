@@ -1,24 +1,55 @@
 import { Type } from "@google/genai";
-import { BaseAgent, minimalLLMCall } from "./gemini";
+import { BaseAgent, generateStructured } from "./gemini";
 import z from "zod";
-import zodToJsonSchema from "zod-to-json-schema";
 
 interface AffectVector {
     [key: string]: number;
 }
 
+export type Event = {
+    source: string;
+    type: 'dialogue' | 'action' | 'thought';
+    content: string;
+    attributes: string[];
+}
 
 type LedgerEntry = {
     event: string;
     affect_vector: AffectVector;
 };
 
+function ObjectToEvent(obj: any): Event | null {
+    if (typeof obj !== 'object' || obj === null) {
+        console.error("Input is not a valid object.");
+        return null;
+    }
+
+    const { source, type, content, attributes } = obj;
+
+    if (typeof source !== 'string' || typeof type !== 'string' || typeof content !== 'string' || !Array.isArray(attributes)) {
+        console.error("Object does not match the Event structure.");
+        return null;
+    }
+
+    if (type !== 'dialogue' && type !== 'action' && type !== 'thought') {
+        console.error(`Invalid event type: ${type}`);
+        return null;
+    }
+
+    if (!attributes.every((a: any) => typeof a === 'string')) {
+        console.error("Attributes must be an array of strings.");
+        return null;
+    }
+
+    return { source, type, content, attributes };
+}
 
 export class Entity extends BaseAgent {
     name: string;
     description: string;
     ledger: LedgerEntry[];
     relations: { [key: string]: Entity };
+    narrationBuffer: Event[];
 
     constructor(name: string, description: string, relations: { [key: string]: Entity } = {}) {
         super();
@@ -26,26 +57,49 @@ export class Entity extends BaseAgent {
         this.description = description;
         this.ledger = [];
         this.relations = relations;
+        this.narrationBuffer = [];
     }
 
-    reactToEvent(event: string, context: any) {
-        let prompt: string = this.promptBuilder(context) + `\n\nThe following event just happened: ${event}\n\n. I can either react by saying something or doing something if it requires a reaction. What do I do?`;
-
-        return this.generateIntent(prompt);
+    addToNarrationBuffer(eventOrEvents: Event | Event[]) {
+        if (Array.isArray(eventOrEvents)) {
+            for (const event of eventOrEvents) {
+                this.narrationBuffer.push(event);
+            }
+        } else {
+            this.narrationBuffer.push(eventOrEvents);
+        }
     }
 
-    static async reactionParser(narrated_event: string): Promise<any> {
+    async reactToEvent(eventOrEventsToReactTo: Event | Event[], context: any) {
+        this.addToNarrationBuffer(eventOrEventsToReactTo);
+
+        let prompt: string = this.promptBuilder(context) + `I can either just think or react by saying something or doing something if it warrants a reaction. What do I do?`;
+        let response = await this.generateIntent(prompt);
+
+        let parsedResponse = await Entity.reactionParser(response);
+        this.addToNarrationBuffer(parsedResponse);
+
+        return response;
+    }
+
+    static async reactionParser(narrated_event: string): Promise<Event[]> {
         // schema is a list of event objects in chronological order.
         const schema = z.array(z.object({
             source: z.string().describe("Who or what caused the event"),
             type: z.enum(['dialogue', 'action', 'thought']),
             content: z.string().describe("Text content of the event"),
-            attributes: z.array(z.string()).describe("List of attributes describing the event, e.g. 'Jack says this while still watching tv', 'Jack seems annoyed', etc."),
+            attributes: z.array(z.string()).describe("List of attributes/modifiers describing the action. Add adjectives, modifiers to enrich the description. NOTE: An action accompanied by a dialogue should be separate events."),
         }));
 
         const instruction = `Parse the following narrated event into a structured format according to the provided schema.`;
 
-        return await minimalLLMCall(instruction, narrated_event, schema);
+        const result = await generateStructured(instruction, narrated_event, schema);
+
+        // convert to Event type
+
+        const events = result.map((item: any) => ObjectToEvent(item)).filter((event: Event | null) => event !== null);
+
+        return events;
     }
 
     recordEvent(event: string, affect_vector: AffectVector) {
@@ -92,9 +146,18 @@ export class Entity extends BaseAgent {
 
         // add recent events
         if (this.ledger.length > 0) {
-            promptString += `Recently, I have experienced the following events:\n`;
+            promptString += `I have experienced the following events:\n`;
             for (const entry of this.ledger.slice(-5)) { // only include last 5 events
                 promptString += `- ${entry.event} (affect vector: ${JSON.stringify(entry.affect_vector)})\n`;
+            }
+            promptString += `\n`;
+        }
+
+        // add narration buffer
+        if (this.narrationBuffer.length > 0) {
+            promptString += `Currently in this context:\n`;
+            for (const event of this.narrationBuffer) { // only include last 5 narrated events
+                promptString += `- ${event.source} ${event.type}: ${event.content} (attributes: ${event.attributes.join(", ")})\n`;
             }
             promptString += `\n`;
         }

@@ -1,6 +1,6 @@
 import { Entity } from "./entity";
+import type { Event } from "./entity";
 import * as readline from "readline";
-
 
 // create an entity
 export const alice = new Entity(
@@ -38,6 +38,7 @@ alice.recordEvent("Didn't reach class on time today. Had to apologize to my stud
     "social": -3,
 });
 
+
 let current_context = {
     location: "home",
     time: "evening",
@@ -46,19 +47,43 @@ let current_context = {
     activity: "relaxing",
 };
 
-let event = {
-    "source": "Jack",
-    "type": "dialogue",
-    "content": "Don't tell me you forgot to buy groceries today.",
-    "attributes": [
-        "jack says this while still watching tv",
-        "jack seems annoyed",
+let event: Event = {
+    source: "Jack",
+    type: "dialogue",
+    content: "Don't tell me you forgot to buy groceries today.",
+    attributes: [
+        "out of the blue",
+        "jack says this while looking at the tv",
+        "jack seems slightly annoyed",
     ]
+};
+
+async function main() {
+    let response = await alice.reactToEvent(event, current_context);
+
+    console.log(response);
+
+    console.log(alice.narrationBuffer)
+
+    // take input
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+    // get input from user (just the natural string)
+    const input: string = await new Promise((resolve) => {
+        rl.question('Enter a new event to react to: ', (answer: string) => {
+            resolve(answer);
+        });
+    });
+    rl.close();
+
+    let newEvents: Event[] = await Entity.reactionParser(input);
+    let newResponse = await alice.reactToEvent(newEvents, current_context);
+    console.log(newResponse);
+
+
+    console.log(alice.narrationBuffer);
 }
 
-alice.reactToEvent(JSON.stringify(event), current_context).then((response) => {
-    console.log("Alice's reaction to the event:", response);
-}).catch((error) => {
-    console.error("Error generating Alice's reaction:", error);
-});
-
+main();

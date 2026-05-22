@@ -1,5 +1,5 @@
 import { describe, beforeEach, test, expect, vi } from "vitest";
-import { Entity } from "./entity";
+import { Entity } from "../src/entity";
 
 describe("Entity.reactionParser", () => {
     beforeEach(() => {
@@ -12,13 +12,6 @@ describe("Entity.reactionParser", () => {
     test("forwards the narrated event and returns the parsed result from minimalLLMCall", async () => {
         const mockResult = [
             {
-                source: "Jack",
-                type: "dialogue",
-                content: "Don't tell me you forgot to buy groceries today.",
-                attributes: [
-                    "jack says this while still watching tv",
-                    "jack seems annoyed",
-                ],
             },
         ];
 
@@ -45,7 +38,7 @@ I set the book on the side table and stand up, not waiting for his response. I d
         expect(result).toEqual(mockResult);
 
         // ensure minimalLLMCall was called with expected args
-        const gemini = await import("./gemini");
+        const gemini = await import("../src/gemini");
         expect((gemini as any).minimalLLMCall).toHaveBeenCalledTimes(1);
         const [instructionArg, narratedArg, jsonSchemaArg] =
             (gemini as any).minimalLLMCall.mock.calls[0];
