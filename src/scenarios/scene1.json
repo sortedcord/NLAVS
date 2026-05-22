@@ -1,0 +1,178 @@
+{
+    "name": "Scene 1",
+    "context": {
+        "time": "2024-06-01T22:00:00Z"
+    },
+    "entities": [
+        {
+            "id": "alice-main",
+            "name": "Alice",
+            "attributes": [],
+            "description": "I'm 32 years old, mother of two. I'm currently working as a piano teacher at a local middle school. My days are mostly the same and life seems to have stagnated for me. I've been married to my husband Jack for 10 years. He's great and we don't fight, but we don't look forward to spending time together either.",
+            "ledger": [
+                {
+                    "event": "Emily, my daughter threw a tantrum again in the morning. I don't know what to do anymore.",
+                    "timestamp": "2024-06-01T07:45:00Z",
+                    "episodeBuffer": [],
+                    "affectVector": {
+                        "joy/distress": -2,
+                        "hope/fear": 0,
+                        "pride/shame": 0,
+                        "gratitude/anger": -1,
+                        "arousal": -2,
+                        "dominance": -3,
+                        "social": 0
+                    }
+                },
+                {
+                    "event": "Ended up getting a speeding ticket on my way to school for lessons. Happened because I got late trying to get Emily ready.",
+                    "timestamp": "2024-06-01T08:30:00Z",
+                    "episodeBuffer": [],
+                    "affectVector": {
+                        "joy/distress": -2,
+                        "hope/fear": 0,
+                        "pride/shame": -2,
+                        "gratitude/anger": -1,
+                        "arousal": -2,
+                        "dominance": -2,
+                        "social": -1
+                    }
+                },
+                {
+                    "event": "Didn't reach class on time today. Had to apologize to my students and the coordinator. I feel so embarrassed.",
+                    "timestamp": "2024-06-01T09:45:00Z",
+                    "episodeBuffer": [],
+                    "affectVector": {
+                        "joy/distress": -3,
+                        "hope/fear": 0,
+                        "pride/shame": -3,
+                        "gratitude/anger": 0,
+                        "arousal": -2,
+                        "dominance": -3,
+                        "social": -3
+                    }
+                }
+            ],
+            "relations": [
+                {
+                    "entityId": "jack-1",
+                    "relation": "husband"
+                },
+                {
+                    "entityId": "emily-1",
+                    "relation": "daughter"
+                },
+                {
+                    "entityId": "matthew-1",
+                    "relation": "son"
+                }
+            ]
+        },
+        {
+            "id": "jack-1",
+            "name": "Jack",
+            "description": "I'm 35 years old, a manager at a local advertisement company. I have been busy with work lately and haven't been able to spend much time with my family.",
+            "attributes": [],
+            "ledger": [],
+            "relations": [
+                {
+                    "entityId": "alice-main",
+                    "relation": "wife"
+                },
+                {
+                    "entityId": "emily-1",
+                    "relation": "daughter"
+                },
+                {
+                    "entityId": "matthew-1",
+                    "relation": "son"
+                }
+            ]
+        }
+    ],
+    "locations": [
+        {
+            "id": "alice-house",
+            "name": "255 Summerfield Street",
+            "description": "A suburban 2 story house with a small garden in the front. The interior is cozy and well-kept, with a living room, kitchen, and three bedrooms.",
+            "attributes": [
+                "Owned by #Entity:alice-main and #Entity:jack-1"
+            ],
+            "attatchedEntities": [
+                "Alice",
+                "Jack",
+                "Emily",
+                "Matthew"
+            ],
+            "aliases": [
+                "Alice's house",
+                "Jack's house",
+                "Emily's house",
+                "Matthew's house"
+            ],
+            "parentLocationNode": "Summerfield Street",
+            "childLocationNodes": []
+        },
+        {
+            "id": "alice-house-living-room",
+            "name": "Living Room",
+            "description": "The living room is a warm and inviting space with comfortable furniture, family photos on the walls, and a large window that lets in natural light. There's a cozy sofa, a coffee table, and a bookshelf filled with books and knick-knacks.",
+            "attributes": [
+                "on the first floor of #Location:alice-house"
+            ],
+            "attatchedEntities": [
+                "alice-main",
+                "jack-1"
+            ],
+            "aliases": [
+                "Living Room"
+            ],
+            "parentLocationNode": "alice-house"
+        },
+        {
+            "id": "alice-house-kitchen",
+            "name": "Kitchen",
+            "description": "The kitchen is a functional and well-organized space with modern appliances, a dining table, and a small pantry. The countertops are clean and there's a window above the sink that overlooks the backyard.",
+            "attributes": [
+                "on the first floor of #Location:255-summerfield-street"
+            ],
+            "attatchedEntities": [],
+            "aliases": [
+                "Kitchen"
+            ],
+            "parentLocationNode": "alice-house"
+        },
+        {
+            "id": "alice-house-emily-bedroom",
+            "name": "Emily's Bedroom",
+            "description": "Emily's bedroom is a colorful and lively space filled with toys, posters of her favorite characters, and a small bed with a pink comforter. There's a desk in the corner where she does her homework and a bookshelf filled with storybooks.",
+            "attributes": [
+                "on the second floor of #Location:255-summerfield-street",
+                "room on the right"
+            ],
+            "attatchedEntities": [
+                "emily-1"
+            ],
+            "aliases": [
+                "Emily's Bedroom"
+            ],
+            "parentLocationNode": "alice-house"
+        },
+        {
+            "id": "alice-house-matthew-bedroom",
+            "name": "Matthew's Bedroom",
+            "description": "Matthew's bedroom is a neat and organized space with a bed, a desk, and shelves filled with his favorite toys and books. The walls are decorated with posters of superheroes and sports teams.",
+            "attributes": [
+                "on the second floor of #Location:255-summerfield-street",
+                "room on the left"
+            ],
+            "attatchedEntities": [
+                "Matthew"
+            ],
+            "aliases": [
+                "Matthew's Bedroom"
+            ],
+            "parentLocationNode": "alice-house"
+        }
+    ]
+}

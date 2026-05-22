@@ -26,6 +26,15 @@ interface IAgent {
 }
 
 export abstract class BaseAgent implements IAgent {
+    readonly id: string;
+
+    constructor(id: string | undefined = undefined) {
+        if (id) {
+            this.id = id;
+        } else {
+            this.id = crypto.randomUUID();
+        }
+    }
     async generateIntent(prompt: string): Promise<string> {
         /**
          * Returns the narrated response by an entity to the built prompt.

@@ -2,10 +2,6 @@ import { Type } from "@google/genai";
 import { BaseAgent, generateStructured } from "./gemini";
 import z from "zod";
 
-interface AffectVector {
-    [key: string]: number;
-}
-
 export type Event = {
     source: string;
     type: 'dialogue' | 'action' | 'thought';
@@ -13,8 +9,14 @@ export type Event = {
     attributes: string[];
 }
 
+interface AffectVector {
+    [key: string]: number;
+}
+
 type LedgerEntry = {
     event: string;
+    timestamp: string;
+    episodeBuffer: any[];
     affect_vector: AffectVector;
 };
 
@@ -26,7 +28,8 @@ function ObjectToEvent(obj: any): Event | null {
 
     const { source, type, content, attributes } = obj;
 
-    if (typeof source !== 'string' || typeof type !== 'string' || typeof content !== 'string' || !Array.isArray(attributes)) {
+    if (typeof source !== 'string' || typeof type !== 'string' ||
+        typeof content !== 'string' || !Array.isArray(attributes)) {
         console.error("Object does not match the Event structure.");
         return null;
     }
@@ -47,16 +50,20 @@ function ObjectToEvent(obj: any): Event | null {
 export class Entity extends BaseAgent {
     name: string;
     description: string;
+    attributes: { [key: string]: string };
     ledger: LedgerEntry[];
     relations: { [key: string]: Entity };
     narrationBuffer: Event[];
 
-    constructor(name: string, description: string, relations: { [key: string]: Entity } = {}) {
-        super();
+    constructor(id: string | undefined = undefined, name: string,
+        description: string, attributes: { [key: string]: string } = {},
+        relations: { [key: string]: Entity } = {}) {
+        super(id);
         this.name = name;
         this.description = description;
         this.ledger = [];
         this.relations = relations;
+        this.attributes = attributes;
         this.narrationBuffer = [];
     }
 
@@ -73,7 +80,9 @@ export class Entity extends BaseAgent {
     async reactToEvent(eventOrEventsToReactTo: Event | Event[], context: any) {
         this.addToNarrationBuffer(eventOrEventsToReactTo);
 
-        let prompt: string = this.promptBuilder(context) + `I can either just think or react by saying something or doing something if it warrants a reaction. What do I do?`;
+        const reactionInstruction = `I can either just think or react by saying something or doing something if it warrants a reaction. What do I do?`;
+
+        let prompt: string = this.promptBuilder(context) + reactionInstruction;
         let response = await this.generateIntent(prompt);
 
         let parsedResponse = await Entity.reactionParser(response);
@@ -100,10 +109,6 @@ export class Entity extends BaseAgent {
         const events = result.map((item: any) => ObjectToEvent(item)).filter((event: Event | null) => event !== null);
 
         return events;
-    }
-
-    recordEvent(event: string, affect_vector: AffectVector) {
-        this.ledger.push({ event, affect_vector });
     }
 
     AddLedgerEntryFunctionDeclaration = {
