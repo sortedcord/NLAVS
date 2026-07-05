@@ -2,6 +2,8 @@
 
 A deterministic mathematical framework for giving LLM-driven entities persistent, nuanced, and non-sycophantic emotional states.
 
+(*Part of the [Omnia Project](https://github.com/sortedcord/omnia)*)
+
 ## The Problem: Sycophancy and Arbitrary Metrics
 
 The inherent nature of LLM outputs is such that they cater to what the user wants, whether directly or indirectly. In AI-driven RPG scenarios, this results in user input hijacking the story and gameplay, making the experience entirely predictable. Characters lack agency: you make a mistake, the character gets angry; you say sorry, the character forgives you. 
