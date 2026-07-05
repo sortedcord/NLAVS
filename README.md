@@ -115,3 +115,44 @@ $$ M_{active} = M_{\text{baseline}} + \sum_{i=1}^{n} \big((V_{raw_i} \odot S) \c
 Furthermore, $S$ can also contain negative values for neurotic traits. If a character is highly paranoid, their susceptibility to `Anger` or `Fear` might be `1.8`, meaning a minor slight (`V_raw = [Anger: +1]`) is perceived by them as a massive slight (`V_processed = [Anger: +1.8]`), while a positive action might be dulled. 
 
 By introducing $S$, we ensure that the same player action yields dramatically different emotional trajectories depending on *who* they are interacting with, organically enforcing character consistency without requiring the LLM to remember "how this character would react."
+
+## Architectural Formalization: Bypassing the Prompt
+
+If we rely solely on text-based system prompts to enforce emotional state (e.g., injecting `[Mood: Angry, 8]` into the context window), we hit a hard paradox: **we are using a tool that is bad at quantized evaluation to generate the very quantized values we need, and then asking it to interpret those values correctly.** 
+
+Even in micro-evaluations, asking an LLM to spit out `Joy: +2` relies on its "vibes." Over thousands of turns, this micro-hallucination compounds. Furthermore, the system prompt is just text. If a user is manipulative enough, the LLM will statistically drift toward sycophancy, ignoring the prompt's emotional constraints.
+
+To achieve true determinism, NLAVS must operate as a neuro-symbolic architecture. The LLM is removed from the arithmetic entirely and relegated to the role of a classifier, while the mathematical state is enforced directly within the transformer's latent space.
+
+### 1. The Input Paradox: Categorical Gradients
+LLMs are terrible at generating consistent scalar numbers, but they are exceptionally good at semantic classification. 
+
+Instead of prompting the LLM to evaluate the arithmetic of an action (`Rate the joy from 1 to 10`), NLAVS requires the LLM to classify the action into a discrete, hardcoded gradient tier.
+
+**Prompt Directive to LLM:** `Classify the action 'gave a candy bar' into one of the following categories: [Minor_Positive, Moderate_Positive, Major_Positive, Neutral, Minor_Negative, Moderate_Negative, Major_Negative].`
+
+**LLM Output:** `Minor_Positive`
+
+The deterministic backend intercepts this string. The LLM's job is over. The backend then maps `Minor_Positive` to a hardcoded, pre-defined vector: `V_raw = [Joy: +1.5, Gratitude: +2.0]`. 
+
+The LLM is no longer hallucinating numbers; it is simply categorizing semantics, and the deterministic engine handles the math.
+
+### 2. The Output Paradox: Latent Steering Vectors
+Once the backend computes the active mood state ($M_{active}$) using the aggregation formula, how do we guarantee it affects the output? We do not stringify it into the prompt. Instead, because we are utilizing open-weight models via HuggingFace, we apply $M_{active}$ as a **Steering Vector** (Representation Engineering) directly into the transformer's forward pass.
+
+Transformers generate text by passing token embeddings through multiple layers, accumulating context in a "residual stream." We can mathematically alter this stream during inference.
+
+1. **Vector Preparation:** The computed $M_{active}$ (e.g., `[Anger: +8, Joy: -4, Social_Drive: -6]`) is projected into the model's hidden dimension space using a trained projection matrix.
+2. **Residual Stream Injection:** During inference, at a specific, targeted transformer layer (e.g., layer 15 of a 32-layer model), the backend intercepts the residual stream.
+3. **Mathematical Enforcement:** The projected $M_{active}$ vector is added directly to the hidden states:
+   $$ h_{modified} = h_{original} + \lambda \cdot \text{Project}(M_{active}) $$
+   *(Where $\lambda$ is a scaling factor to prevent token degeneration).*
+
+**The Result:** The model literally "feels" the anger at a computational level. Its internal semantic activations are nudged toward hostility and rejection concepts *before* it even processes the user's text or generates the first word. Sycophancy is bypassed entirely because the emotional state is no longer a suggestion in the context window; it is a mathematical alteration of the model's neural pathways.
+
+---
+
+### Afternote: Soft Prompts (For Closed APIs)
+If this architecture were to be adapted for closed APIs (like OpenAI or Anthropic) where white-box access to the residual stream is unavailable, we can fall back to **Continuous Embeddings (Soft Prompts)**. 
+
+Instead of injecting $M_{active}$ into the residual stream, the backend maps the vector to a set of continuous, pre-trained embedding tensors. These tensors are prepended to the user's input at the embedding level, bypassing the text tokenizer entirely. The transformer processes these abstract mathematical vectors as if they were foundational context, enforcing the state without relying on easily manipulated text strings.
