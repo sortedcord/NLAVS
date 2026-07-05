@@ -1,102 +1,117 @@
-# NLAVS
+# NLAVS (Non-Linear Affective Vector Space)
 
-## What are we trying to solve here
+A deterministic mathematical framework for giving LLM-driven entities persistent, nuanced, and non-sycophantic emotional states.
 
-The inherent nature of LLM outputs is such that it caters to what the user wants it to output, whether its directly or indirectly. In case of made up RPG scenarios, what ends up happening is that the user input hijacks the story and/or gameplay making the entire thing very predictable as the characters tend to lack any agency. You make a mistake, the character gets angry, you say sorry, the character forgives you. 
+## The Problem: Sycophancy and Arbitrary Metrics
 
-This is why I had been experimenting on using external deterministic state machines to bind LLMs so that it doesn't have to leave the metrics of a character's state up for hallucination or vibes.
+The inherent nature of LLM outputs is such that they cater to what the user wants, whether directly or indirectly. In AI-driven RPG scenarios, this results in user input hijacking the story and gameplay, making the experience entirely predictable. Characters lack agency: you make a mistake, the character gets angry; you say sorry, the character forgives you. 
 
-Something like
+To fix this, developers often experiment with external deterministic state machines to bind LLMs, preventing them from leaving a character's emotional state up to hallucination or "vibes."
 
-```
+```json
 "state_metrics": {
     "trust": 40,
-    "anxiety": 78
+    "anxiety": 78,
     "happiness": 60
 }
 ```
 
-The issue here is that assigning a scalar number like `trust: 40` to a deeply complex human emotion is a legacy mechanic inherited from traditional video games (like RPG alignment sliders). When you pair arbitrary numbers with LLMs the system quickly breaks down mainly because of the fact that these numbers are arbitrary.
+The issue here is that assigning a scalar number like `trust: 40` to a deeply complex human emotion is a legacy mechanic inherited from traditional video games (like RPG alignment sliders). When you pair arbitrary numbers with LLMs, the system quickly breaks down. 
 
-Is happiness=40 twice as good as happiness=20? And even if it is twice as much, what does it mean exactly? Besides if you ask an LLM to evaluate a scene and adjust a score, it will completely hallucinate the numbers, leading to erratic, robotic, or illogical character behavior. 
+Is `happiness: 40` twice as good as `happiness: 20`? And even if it is, what does that mean exactly? If you ask an LLM to evaluate a scene and adjust a score, it will hallucinate the numbers, leading to erratic, robotic, or illogical character behavior. 
 
-The bottom line is that you cannot let AI judge itself using numerical scales on things that are subjective and non-linear.
+**The bottom line:** You cannot let AI judge itself using numerical scales on things that are subjective and non-linear. To build an interactive narrative simulation that feels consistently real, we must transition to a qualitative, structured tracking mechanism that leverages deterministic math over LLM hallucination.
 
-So its clear that if I want to build an interactive narrative smulation that feels real consistent without relying on arbitrary numerical scoring, I have to transisiton to some qualitative, structured tracking mechanisms.
+## The Evolution of State Tracking
 
-_Right?_
+### 1. Discrete State Matrices
+Instead of tracking emotions on a linear scale of 1 to 100, we can lock a character into predefined psychological tiers. Each tier has a hardcoded set of prompt behaviors the LLM must obey. Instead of writing `trust: 42`, the backend tracks structural relationship statuses:
 
-## Discrete State Matrices
+* `[Relationship Status: Guarded]`
+* `[Relationship Status: Friendly]`
+* `[Relationship Status: Traumatized/Betrayed]`
 
-Instead of tracking emotions on a linear scale of 1 to 100, we can lock the character into pre defined psychological tiers where each tier has a hardcoded, unchangeable set of prompt behaviors that the LLM must obey. (This system also has its quirks and I'll explain why I moved on from this later.)
+If a player shoots a friend in the foot out of the blue, the character is computationally locked into `Trauma/Betrayal`. The system will not allow the status to change just because of a nice-sounding dialogue or a simple apology. We override the AI's tendency to automatically submit to user inputs. 
 
-Instead of writing `trust: 42`, the backend architecture tracks structural relationship status like:
+*Limitation:* Human emotional changes are not always discrete steps; they are continuous. Flattening this gradient into discrete steps decreases the accuracy of the emotional intelligence simulation.
 
-- `[Relationship status: Gaurded]`
-- `[Relationship Status: Friendly]`
-- `[Relationship Status: Traumatized/Betrayed]`
+### 2. Fact Ledgers
+Unlike arbitrary numbers, actions are permanent and hold meaning. Humans don't measure a relationship by checking an internal points meter; we remember specific concrete events. 
 
-So considering a case where you shoot a friend in the foot out of the blue the character would be computationally locked into a state of `Trauma/Betrayal`. The system will not allow the status to change just because of a nice sounding dialogue or a simple apology. Basically, we override the AI's tendency to automatically submit to the uer's inputs.
+We maintain a permanent, bulleted list of the player's narrative actions. Every major choice gets appended to a hidden ledger block pinned directly to the AI's core memory stack. When the AI evaluates how to act, it reads the ledger. Because the concrete memory of a betrayal is sitting right there in the prompt, the model is mathematically pushed to maintain lingering suspicion, even if the player is currently typing something positive.
 
-## Fact Ledgers
+### 3. Micro-Evaluations vs. Macro-Arithmetic
+To get continuous, nuanced state gradients without AI memory drift, we separate the evaluation from the aggregation. 
 
-Unlike solecistic numbers, actions are much more permanent and hold meaning. Even in real life, humans don't measure a relationship by checking an internal points meter; we remember specific concrete events.
-
-So we mantain a permanent, bulleted list of player's narrative crimes. Ever major choice the player makes gets appended to a hidden ledger block that is pinned directly to AI's core memory stack.
-
-When the AI evaluates how an entity should act, it reads the ledger. Because the concrete memory of a action of betrayal or trauma is sitting right there in the prompt, the model is mathematically pushed to maintain a lingering suspicion and resentment even if the player is currently typing something that should positively impact the prompt.
-
-So we have our fact ledger and discrete state matrices to define the current state of the entity. Both of these things impact the next actions of the entity. But this still has some limitations. 
-
-changes in emotions are not always in discrete steps, its continous, so we need to preserve that gradient information. Flattening that information into discrete steps decreases how accurately we are simulating emotional intelligence. But if we want to store numbers, we again run into the same problem of self-grading as we talked about above. 
-
-But what if, this time instead of letting the AI directly determine numbers to "grade" the entity's state, we compute it mathematically?
-
-We are already keeping a track of actions that happen to the entity in a ledger, so, what we can try and do is to let AI assign a micro-score to the delta of how that action would transform the current mood state.
-
-While LLMs are terrible at macro-arithmetic (like tracking state over time) they aren't half bad at micro-evaluations (like parsing a moment). We let the LLM calculate a vector for a single action once, and let the math handle continuous aggragation, we get the best of both worlds. We now might have a system thats both continuous nuanced state gradients but without the AI memory drift.
+While LLMs are terrible at macro-arithmetic (tracking state over time), they are excellent at micro-evaluations (parsing a single moment). We let the LLM calculate a vector for a single action *once*, and let deterministic math handle the continuous aggregation.
 
 ## Affective Vector Space
 
-I have noticed that entities frequently display conflicting emotions. Like taking up our previous example, "friend A" can be furious about the stray cat, yet be grateful about sharing a candy bar. On a traditional linear slider, positive and negative numbers cancel each other out ( $+5 Affection - 5 Anger = 0 Neutral$ ) which basically makes the AI act like a robot with Amnesia.
+Entities frequently display conflicting emotions. A friend can be furious about a stray cat, yet grateful about sharing a candy bar. On a traditional linear slider, positive and negative numbers cancel each other out (`+5 Affection - 5 Anger = 0 Neutral`), making the AI act like a robot with amnesia.
 
 With our vector approach, a character can possess simultaneously high anger and high affection:
 
-$$V_{state} = [ \text{Happiness}: - 4, \text{Anger}: + 8, \text{Affection}: + 7 ]$$
+$$ V_{state} = [ \text{Joy}: -4, \text{Anger}: +8, \text{Affection}: +7 ] $$
 
 ### Aggregation using Decay and Attention
+If we simply add up every vector in the ledger forever, an entity's emotions will eventually max out at +10 or -10 and freeze. Instead, the entity's current active mood vector ($M_{active}$) at any given time is calculated by:
 
-If we simply add up every vector in the ledger forever, the entity's emotions will eventually max out at +10 or -10 and freeze. So instead of that, the entity's current active mood vector $M_{active}$ at any given time can be calculated by:
+$$ M_{active} = M_{\text{baseline}} + \sum_{i=1}^{n} (V_i \cdot w_i \cdot d_i) $$
 
-$$M_{active} = M_{\text{baseline}} + \sum_{i=1}^{n} (V_i \cdot w_i \cdot d_i) $$
-
-$\vec{M}_{\text{baseline}}$ is the character's default resting personality or previous current state
-
-$\vec{V}_i$ is the emotional vector of a specific fact in the ledger book.
-
-$d_i$ is the Decay Multiplier (Time-based). Every turn that passes, an old event's vector shrinks closer to $0$. A petty argument decays in 5 turns; a massive betrayal takes 500 turns to decay.
-
-$w_i$ is the Attention Weight (Memory Activation). If a fact is not currently being talked about, its weight drops to $0.1$. But if the player suddenly brings up an old trauma, the system instantly spikes that event's attention weight $w_i$ back to $1.0$.
+* **$M_{\text{baseline}}$**: The character's default resting personality state.
+* **$V_i$**: The emotional vector of a specific fact in the ledger.
+* **$d_i$ (Decay Multiplier)**: Time-based. Every turn that passes, an old event's vector shrinks closer to $0$. A petty argument decays in 5 turns; a massive betrayal takes 500 turns to decay.
+* **$w_i$ (Attention Weight)**: Memory activation. If a fact is not currently being discussed, its weight drops to $0.1$. If the player suddenly brings up an old trauma, the system instantly spikes that event's attention weight back to $1.0$.
 
 ## Deciding on the Vector Tracking Axes
 
-For this, I thought it would be a good idea to read up on the OCC model of emotions which categorizes 22 emotions based on cognition. Now, using all those 22 emotions as-is would probably be a very naive way of approaching things here. What we are going to do is to simplify them into valences.  
+To structure these vectors, we look to the OCC model of emotions, which categorizes emotions based on cognition. Using all 22 OCC emotions as-is is too complex for a computational matrix. Instead, we simplify them into core valences.
 
-Here's what I consider to be a reasonable minimal OCC-derived set:
+Here is a reasonable minimal OCC-derived set:
 
-| Emotion              | Valence | OCC Source                        |
-|----------------------|---------|-----------------------------------|
-| Joy                  | +       | desirable event happened          |
-| Distress             | −       | undesirable event happened        |
-| Hope                 | +       | desirable event anticipated       |
-| Fear                 | −       | undesirable event anticipated     |
-| Pride / Satisfaction | +       | own action judged well            |
-| Shame / Remorse      | −       | own action judged poorly          |
-| Gratitude            | +       | other's action benefited you      |
-| Anger                | −       | other's action harmed you         |
+| Emotion | Valence | OCC Source |
+| :--- | :---: | :--- |
+| Joy | + | Desirable event happened |
+| Distress | − | Undesirable event happened |
+| Hope | + | Desirable event anticipated |
+| Fear | − | Undesirable event anticipated |
+| Pride / Satisfaction | + | Own action judged well |
+| Shame / Remorse | − | Own action judged poorly |
+| Gratitude | + | Other's action benefited you |
+| Anger | − | Other's action harmed you |
 
-Other than that we also parameterize this into 3 other dimensions:
+To capture the full psychological picture, we parameterize these valences into three additional dimensions (borrowing from the PAD emotional state model):
 
-- Arousal: Tracks High Energy vs. Low Energy. Helps us distinguish sharp distress from a quiet reflective melancholy.
-- Dominance: High positive values denote feeling powerful, safe and in control while low values denote feeling helpless or overwhelmed.
-- Social Drive: Tracks the instict to socially interact with others or the desire to isolate or reject.
+* **Arousal:** Tracks High Energy vs. Low Energy. Distinguishes sharp distress from quiet, reflective melancholy.
+* **Dominance:** High positive values denote feeling powerful, safe, and in control. Low values denote feeling helpless or overwhelmed.
+* **Social Drive:** Tracks the instinct to socially interact versus the desire to isolate or reject.
+
+## Personality Vectors: Modifiers and Susceptibility
+
+Different people have different personalities, which introduces **susceptibility**. Some people are inherently more susceptible to anger, happiness, or excitement than others. 
+
+To simulate this, NLAVS introduces a **Personality Susceptibility Vector ($S$)**. This is a hardcoded, permanent multiplier applied to incoming events *before* they are added to the ledger and aggregated. 
+
+Instead of letting every character react identically to the same stimulus, $S$ warps the incoming emotional vector ($V_{raw}$) to fit the character's unique psychology.
+
+### The Susceptibility Transformation
+When an event occurs, the LLM generates the "objective" emotional weight of the action ($V_{raw}$). Before this is committed to the ledger, it is multiplied element-wise by the character's Susceptibility Vector:
+
+$$ V_{processed} = V_{raw} \odot S $$
+
+(Where $\odot$ represents the Hadamard product, or element-wise multiplication).
+
+**Example:**
+* A player gives Character A and Character B a thoughtful gift. 
+* The LLM evaluates the action and outputs a raw vector: `V_raw = [Joy: +2, Gratitude: +3]`
+* **Character A (Cynical/Grumpy):** Has a low susceptibility to Joy and Gratitude (`S = [Joy: 0.5, Gratitude: 0.5]`). Their processed vector becomes `[Joy: +1, Gratitude: +1.5]`. They appreciate it, but begrudgingly.
+* **Character B (Optimistic/Eager):** Has a high susceptibility (`S = [Joy: 1.5, Gratitude: 2.0]`). Their processed vector becomes `[Joy: +3, Gratitude: +6]`. They are elated.
+
+### Updating the Master Equation
+Because $S$ permanently alters how a specific character perceives reality, it acts as a gateway to the Fact Ledger. The aggregated master equation is updated to reflect this:
+
+$$ M_{active} = M_{\text{baseline}} + \sum_{i=1}^{n} \big((V_{raw_i} \odot S) \cdot w_i \cdot d_i\big) $$
+
+Furthermore, $S$ can also contain negative values for neurotic traits. If a character is highly paranoid, their susceptibility to `Anger` or `Fear` might be `1.8`, meaning a minor slight (`V_raw = [Anger: +1]`) is perceived by them as a massive slight (`V_processed = [Anger: +1.8]`), while a positive action might be dulled. 
+
+By introducing $S$, we ensure that the same player action yields dramatically different emotional trajectories depending on *who* they are interacting with, organically enforcing character consistency without requiring the LLM to remember "how this character would react."
