@@ -118,6 +118,56 @@ Furthermore, $S$ can also contain negative values for neurotic traits. If a char
 
 By introducing $S$, we ensure that the same player action yields dramatically different emotional trajectories depending on *who* they are interacting with, organically enforcing character consistency without requiring the LLM to remember "how this character would react."
 
+## Stochastic Cognitive Noise (The Intrusive Thought Engine)
+
+If NLAVS operates purely deterministically, the entity becomes a perfectly predictable emotional machine. But human minds are not perfectly ordered databases. We experience intrusive thoughts, sudden inexplicable mood swings, and the unbidden resurfacing of minor memories. You might be working calmly at your desk, and suddenly remember an embarrassing mistake from five years ago, experiencing a sharp spike in shame that fades a minute later.
+
+To simulate this organic chaos, we introduce **Stochastic Cognitive Noise**. This is a mathematically bounded noise layer that injects spontaneous variance into the attention weights, the baseline mood, and vector cross-talk.
+
+### 1. Stochastic Attention Spikes (Memory Intrusion)
+In the standard NLAVS formula, the Attention Weight ($w_i$) of a dormant memory drops to $0.1$. However, human memory is associative and prone to spontaneous activation. 
+
+We apply a Poisson distribution to govern the probability of an "intrusive thought" occurring for any given fact in the ledger per turn. 
+
+$$ P(\text{spike}_i) = \frac{e^{-\lambda} \lambda^k}{k!} $$
+
+If a spike triggers (a rare event), the event's attention weight $w_i$ is temporarily multiplied by a stochastic noise multiplier $\nu_i$, which overrides the dormant $0.1$ state:
+
+$$ w_{i(t)} = 0.1 + \nu_i(t) \cdot \mathbb{I}_{\text{spike}} $$
+
+Where $\nu_i(t)$ is sampled from a Gaussian distribution $\mathcal{N}(\mu, \sigma^2)$. 
+* **The Result:** The entity might be having a normal conversation, but suddenly the math forces a minor, half-decayed argument from 20 turns ago to the forefront of its active mood calculation. The entity might become briefly irritable or distracted, without the player doing anything to prompt it.
+
+### 2. Baseline Bio-Rhythmic Drift
+An entity’s resting state ($M_{\text{baseline}}$) should not be a flat, permanent constant. Humans have biological circadian rhythms, chemical fluctuations, and "waking up on the wrong side of the bed."
+
+We replace the static $M_{\text{baseline}}$ with a dynamic baseline that evolves using a Random Walk (Wiener Process) bounded by the character's core personality limits:
+
+$$ M_{\text{baseline}}(t) = M_{\text{baseline}}(t-1) + \mathcal{N}(0, \sigma_{\text{drift}}^2) $$
+
+To prevent the baseline from drifting into an extreme state permanently, we apply a mean-reverting force (Ornstein-Uhlenbeck process), pulling it back to the character's hardcoded genetic default over time:
+
+$$ dM_{\text{baseline}} = \theta (M_{\text{default}} - M_{\text{baseline}})dt + \sigma dW_t $$
+
+* **The Result:** The entity will naturally have "good days" and "bad days" mathematically baked into its baseline state. A character with high baseline anxiety might randomly spike to a higher resting anxiety for a few turns, making them more susceptible to annoyance even if the player is being polite.
+
+### 3. Emotional Cross-Talk (Vector Bleed)
+In real brains, high arousal can bleed into anger; high fear can bleed into shame. Emotions are not perfectly orthogonal. 
+
+To simulate this, we apply a **Stochastic Rotation Matrix ($R_{\theta}$)** to the final $M_{active}$ vector. At every turn, the axes of the vector space are slightly, randomly rotated against each other:
+
+$$ M_{active\_final} = R_{\theta} \cdot M_{active} $$
+
+Where $R_{\theta}$ is a sparse matrix with tiny random angular values (e.g., rotating the Joy/Anger plane by $0.02$ radians). 
+* **The Result:** If a character is experiencing extremely high `Arousal` and moderate `Fear`, the cross-talk rotation might mathematically nudge a portion of that Arousal into `Anger`. The character suddenly snaps, not because of the player's action, but because their internal emotional math organically crossed wires.
+
+### The Final Master Equation
+Incorporating the Stochastic Cognitive Noise layer, the final computation for the entity's active state before latent injection becomes:
+
+$$ M_{active\_final}(t) = R_{\theta(t)} \cdot \Bigg[ M_{\text{baseline}}(t) + \sum_{i=1}^{n} \big((V_{raw_i} \odot S) \cdot (w_i + \nu_i(t)) \cdot d_i\big) \Bigg] $$
+
+By keeping the LLM out of this arithmetic and letting the deterministic engine handle the probability distributions, the entity now exhibits lifelike spontaneity. It will occasionally act irrationally, hold grudges unexpectedly, or experience sudden shifts in temperament that the player must navigate, shattering the illusion of predictable, sycophantic AI behavior.
+
 ## Architectural Formalization: Bypassing the Prompt
 
 If we rely solely on text-based system prompts to enforce emotional state (e.g., injecting `[Mood: Angry, 8]` into the context window), we hit a hard paradox: **we are using a tool that is bad at quantized evaluation to generate the very quantized values we need, and then asking it to interpret those values correctly.** 
@@ -140,14 +190,14 @@ The deterministic backend intercepts this string. The LLM's job is over. The bac
 The LLM is no longer hallucinating numbers; it is simply categorizing semantics, and the deterministic engine handles the math.
 
 ### 2. The Output Paradox: Latent Steering Vectors
-Once the backend computes the active mood state ($M_{active}$) using the aggregation formula, how do we guarantee it affects the output? We do not stringify it into the prompt. Instead, because we are utilizing open-weight models via HuggingFace, we apply $M_{active}$ as a **Steering Vector** (Representation Engineering) directly into the transformer's forward pass.
+Once the backend computes the active mood state ($M_{active\_final}$) using the aggregation formula, how do we guarantee it affects the output? We do not stringify it into the prompt. Instead, because we are utilizing open-weight models via HuggingFace, we apply $M_{active\_final}$ as a **Steering Vector** (Representation Engineering) directly into the transformer's forward pass.
 
 Transformers generate text by passing token embeddings through multiple layers, accumulating context in a "residual stream." We can mathematically alter this stream during inference.
 
-1. **Vector Preparation:** The computed $M_{active}$ (e.g., `[Anger: +8, Joy: -4, Social_Drive: -6]`) is projected into the model's hidden dimension space using a trained projection matrix.
+1. **Vector Preparation:** The computed $M_{active\_final}$ (e.g., `[Anger: +8, Joy: -4, Social_Drive: -6]`) is projected into the model's hidden dimension space using a trained projection matrix.
 2. **Residual Stream Injection:** During inference, at a specific, targeted transformer layer (e.g., layer 15 of a 32-layer model), the backend intercepts the residual stream.
-3. **Mathematical Enforcement:** The projected $M_{active}$ vector is added directly to the hidden states:
-   $$ h_{modified} = h_{original} + \lambda \cdot \text{Project}(M_{active}) $$
+3. **Mathematical Enforcement:** The projected $M_{active\_final}$ vector is added directly to the hidden states:
+   $$ h_{modified} = h_{original} + \lambda \cdot \text{Project}(M_{active\_final}) $$
    *(Where $\lambda$ is a scaling factor to prevent token degeneration).*
 
 **The Result:** The model literally "feels" the anger at a computational level. Its internal semantic activations are nudged toward hostility and rejection concepts *before* it even processes the user's text or generates the first word. Sycophancy is bypassed entirely because the emotional state is no longer a suggestion in the context window; it is a mathematical alteration of the model's neural pathways.
@@ -157,4 +207,4 @@ Transformers generate text by passing token embeddings through multiple layers, 
 ### Afternote: Soft Prompts (For Closed APIs)
 If this architecture were to be adapted for closed APIs (like OpenAI or Anthropic) where white-box access to the residual stream is unavailable, we can fall back to **Continuous Embeddings (Soft Prompts)**. 
 
-Instead of injecting $M_{active}$ into the residual stream, the backend maps the vector to a set of continuous, pre-trained embedding tensors. These tensors are prepended to the user's input at the embedding level, bypassing the text tokenizer entirely. The transformer processes these abstract mathematical vectors as if they were foundational context, enforcing the state without relying on easily manipulated text strings.
+Instead of injecting $M_{active\_final}$ into the residual stream, the backend maps the vector to a set of continuous, pre-trained embedding tensors. These tensors are prepended to the user's input at the embedding level, bypassing the text tokenizer entirely. The transformer processes these abstract mathematical vectors as if they were foundational context, enforcing the state without relying on easily manipulated text strings.
